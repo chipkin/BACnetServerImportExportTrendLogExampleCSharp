@@ -1,0 +1,8 @@
+# Example Log file to preload a Trend Log Object
+#
+# Number, Timestamp (Epoch), DatumType, DatumAsString
+1,1590739200,2,1.1 
+2,1590739230,2,2.2
+3,1590739260,2,3.3
+4,1590739290,2,4.4
+5,1590739320,2,5.5
