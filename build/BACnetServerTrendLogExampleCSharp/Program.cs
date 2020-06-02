@@ -53,7 +53,7 @@ namespace BACnetServerTrendLogExampleCSharp
 
             public void Run()
             {
-                Console.WriteLine("Starting Windows-BACnetServerExampleCSharp version: {0}.{1}", APPLICATION_VERSION, CIBuildVersion.CIBUILDNUMBER);
+                Console.WriteLine("Starting Windows BACnetServer TrendLog Example CSharp version: {0}.{1}", APPLICATION_VERSION, CIBuildVersion.CIBUILDNUMBER);
                 Console.WriteLine("https://github.com/chipkin/BACnetServerTrendLogExampleCSharp");
                 Console.WriteLine("FYI: BACnet Stack version: {0}.{1}.{2}.{3}",
                     CASBACnetStackAdapter.GetAPIMajorVersion(),
@@ -343,21 +343,25 @@ namespace BACnetServerTrendLogExampleCSharp
                             BackupTrendLogMultipleToFile();
                             Console.WriteLine("Back up complete");
                             break;
-                        case ConsoleKey.H:
-                            Console.WriteLine("\tF1:\t Version Info");
-                            Console.WriteLine("\tUp:\t Increase ManualIncrement Analog Input Present Value by 0.01f");
-                            Console.WriteLine("\tDown:\t Decrease ManualIncrement Analog Input Present Value by 0.01f");
-                            Console.WriteLine("\tB:\t Backup TrendLog to file");
-                            Console.WriteLine("\tS:\t Backup TrendLogMultiple to file");
-                            break;
                         case ConsoleKey.Q:
                             Console.WriteLine("Exiting program");
                             System.Environment.Exit(1);
                             break;
+                        case ConsoleKey.H:              
                         default:
+                            PrintHelp();
                             break;
                     }
                 }
+            }
+
+            public void PrintHelp()
+            {
+                Console.WriteLine("\tF1:\t Version Info");
+                Console.WriteLine("\tUp:\t Increase ManualIncrement Analog Input Present Value by 0.01f");
+                Console.WriteLine("\tDown:\t Decrease ManualIncrement Analog Input Present Value by 0.01f");
+                Console.WriteLine("\tB:\t Backup TrendLog to file");
+                Console.WriteLine("\tS:\t Backup TrendLogMultiple to file");
             }
 
             public ulong CallbackGetSystemTime()
