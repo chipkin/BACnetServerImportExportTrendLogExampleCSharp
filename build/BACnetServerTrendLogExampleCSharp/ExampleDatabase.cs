@@ -1,4 +1,22 @@
-﻿using System;
+﻿/**
+ * BACnet Server Trend Log Example CSharp
+ * ----------------------------------------------------------------------------
+ * ExampleDatabase.cs
+ * 
+ * In this CAS BACnet Stack example, we create a BACnet IP server with a Trend Log Object
+ * and a Trend Log Multiple Object that will be pre-loaded with data from a backed up file.
+ * 
+ * There are some additional user input options that can trigger logic that will read 
+ * the current values in the Trend Logs and back them up in another file.
+ *
+ * More information https://github.com/chipkin/BACnetServerTrendLogExampleCSharp
+ * 
+ * Created by: Alex Fontaine
+ * Created on: May 29, 2020 
+ * Last updated: May 29, 2020
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -108,6 +126,7 @@ namespace BACnetServerTrendLogExampleCSharp
             };
         }
 
+        // Loop to update database values
         public void Loop()
         {
             DateTime current = DateTime.Now;

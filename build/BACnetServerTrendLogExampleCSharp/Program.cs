@@ -1,6 +1,8 @@
 ﻿/**
  * BACnet Server Trend Log Example CSharp
  * ----------------------------------------------------------------------------
+ * Program.cs
+ * 
  * In this CAS BACnet Stack example, we create a BACnet IP server with a Trend Log Object
  * and a Trend Log Multiple Object that will be pre-loaded with data from a backed up file.
  * 
@@ -12,7 +14,7 @@
  * Created by: Alex Fontaine
  * Created on: May 29, 2020 
  * Last updated: May 29, 2020
- */
+*/
 
 using System;
 using System.IO;
@@ -27,12 +29,14 @@ namespace BACnetServerTrendLogExampleCSharp
 {
     class Program
     {
+        // Main function
         static void Main(string[] args)
         {
             BACnetServer bacnetServer = new BACnetServer();
             bacnetServer.Run();
         }
 
+        // BACnet Server Object
         unsafe class BACnetServer
         {
             // UDP
@@ -42,7 +46,7 @@ namespace BACnetServerTrendLogExampleCSharp
             string _trendLogBackupPath;
             string _trendLogMultipleBackupPath;
 
-            // Settings
+            // Set up the BACnet port 
             const UInt16 SETTING_BACNET_PORT = 47808;
 
             // A Simple Example Database to store the values used in this example
@@ -51,6 +55,7 @@ namespace BACnetServerTrendLogExampleCSharp
             // Version
             const string APPLICATION_VERSION = "0.0.1";
 
+            // Server setup and main loop
             public void Run()
             {
                 Console.WriteLine("Starting Windows BACnetServer TrendLog Example CSharp version: {0}.{1}", APPLICATION_VERSION, CIBuildVersion.CIBUILDNUMBER);
@@ -60,6 +65,9 @@ namespace BACnetServerTrendLogExampleCSharp
                     CASBACnetStackAdapter.GetAPIMinorVersion(),
                     CASBACnetStackAdapter.GetAPIPatchVersion(),
                     CASBACnetStackAdapter.GetAPIBuildVersion());
+
+                // 1. Setup the callbacks
+                // ---------------------------------------------------------------------------
 
                 // Send/Recv Callbacks
                 CASBACnetStackAdapter.RegisterCallbackSendMessage(SendMessage);
@@ -74,8 +82,15 @@ namespace BACnetServerTrendLogExampleCSharp
                 CASBACnetStackAdapter.RegisterCallbackGetPropertyReal(CallbackGetPropertyReal);
                 CASBACnetStackAdapter.RegisterCallbackGetPropertyUnsignedInteger(CallbackGetUnsignedInteger);
 
+
+                // 2. Setup the BACnet device
+                // ---------------------------------------------------------------------------
+
                 // Setup database
                 database.Setup();
+
+                // Add Objects
+                // ---------------------------------------------------------------------------
 
                 // Add the device
                 CASBACnetStackAdapter.AddDevice(database.Device.Instance);
@@ -103,6 +118,9 @@ namespace BACnetServerTrendLogExampleCSharp
                 CASBACnetStackAdapter.AddLoggedObjectToTrendLogMultiple(database.Device.Instance, database.TrendLogMultiple.Instance, CASBACnetStackAdapter.OBJECT_TYPE_MULTI_STATE_INPUT, database.MultiStateInput.Instance, CASBACnetStackAdapter.PROPERTY_IDENTIFIER_PRESENT_VALUE, false, 0, false, 0);
                 CASBACnetStackAdapter.SetTrendLogTypeToPolled(database.Device.Instance, CASBACnetStackAdapter.OBJECT_TYPE_TREND_LOG_MULTIPLE, database.TrendLogMultiple.Instance, true, false, 3000);
 
+
+                // 3. Enable Services
+                // ---------------------------------------------------------------------------
                 // Enable Optional Properties
                 CASBACnetStackAdapter.SetServiceEnabled(database.Device.Instance, CASBACnetStackAdapter.SERVICES_SUPPORTED_READ_PROPERTY_MULTIPLE, true);
                 CASBACnetStackAdapter.SetServiceEnabled(database.Device.Instance, CASBACnetStackAdapter.SERVICES_SUPPORTED_WRITE_PROPERTY, true);
@@ -111,46 +129,56 @@ namespace BACnetServerTrendLogExampleCSharp
                 // All done with the BACnet Setup
                 Console.WriteLine("FYI: CAS BACnet Stack Setup, successfully");
 
+
+                // 4. Setup Trend Log objects
+                // ---------------------------------------------------------------------------
+
                 Console.WriteLine("FYI: Loading initial data points to Trend Log and Trend Log Multiple objects");
-                // Load Trend Log and Trend Log Multiple from file
+                
+                // Preload Trend Log and Trend Log Multiple from file
                 string currentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
                 _trendLogBackupPath = Path.Combine(currentDirectory, "trendLogBackupExample.txt");
                 _trendLogMultipleBackupPath = Path.Combine(currentDirectory, "trendLogMultipleBackupExample.txt");
 
-                if(!LoadTrendLogFromFile(_trendLogBackupPath))
+                if (!LoadTrendLogFromFile(_trendLogBackupPath))
                 {
                     Console.WriteLine("Failed to load trendLog from {0}", _trendLogBackupPath);
                     return;
                 }
-                if(!LoadTrendLogMultipleFromFile(_trendLogMultipleBackupPath))
+                if (!LoadTrendLogMultipleFromFile(_trendLogMultipleBackupPath))
                 {
                     Console.WriteLine("Failed to load trendLogMultiple from {0}", _trendLogMultipleBackupPath);
                     return;
                 }
                 Console.WriteLine("FYI: Initial data load complete");
 
-                // Open the BACnet port to recive messages. 
+                // 5. Open the BACnet port to receive messages
+                // ---------------------------------------------------------------------------
                 udpServer = new UdpClient(SETTING_BACNET_PORT);
                 remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-                // Main loop.
+
+                // 6. Main loop
+                // ---------------------------------------------------------------------------
                 Console.WriteLine("FYI: Starting main loop");
                 for (; ; )
                 {
-                    CASBACnetStackAdapter.Loop();
+                    CASBACnetStackAdapter.Loop(); // BACnet Stack adapter update loop
 
-                    database.Loop(); // Just for this example 
-                    DoUserInput(); // Just for this example 
+                    database.Loop(); // Update values in the example database
+
+                    DoUserInput(); // Handle user input
                 }
             }
 
+            // Load TrendLog initial data points
             private bool LoadTrendLogFromFile(string filename)
             {
                 string line;
                 StreamReader file = new StreamReader(filename);
                 while ((line = file.ReadLine()) != null)
                 {
-                    if(line.StartsWith("#"))
+                    if (line.StartsWith("#"))
                     {
                         // Ignore comments, lines that start with #
                         continue;
@@ -158,7 +186,7 @@ namespace BACnetServerTrendLogExampleCSharp
 
                     // Split on ,
                     string[] elements = line.Split(',');
-                    if(elements.Length != 4)
+                    if (elements.Length != 4)
                     {
                         Console.WriteLine("Error - invalid data line: {0}", line);
                         continue;
@@ -169,7 +197,8 @@ namespace BACnetServerTrendLogExampleCSharp
                     byte datumType = Convert.ToByte(elements[2]);
                     byte[] datumAsString = Encoding.ASCII.GetBytes(elements[3]);
 
-                    fixed (byte* ptr = datumAsString) {
+                    fixed (byte* ptr = datumAsString)
+                    {
                         if (!CASBACnetStackAdapter.InsertTrendLogRecord(database.Device.Instance, database.TrendLog.Instance, timestamp, datumType, ptr, (uint)datumAsString.Length, null, 0))
                         {
                             Console.WriteLine("Error - failed to insert record in TrendLog for line: {0}", line);
@@ -181,6 +210,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return true;
             }
 
+            // Load TrendLogMultiple initial data points
             private bool LoadTrendLogMultipleFromFile(string filename)
             {
                 string line;
@@ -222,6 +252,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return true;
             }
 
+            // Backup trendlog data points to txt file
             private bool BackupTrendLogToFile()
             {
                 string currentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
@@ -263,6 +294,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return true;
             }
 
+            // Backup trendlog multiple data points to txt file
             private bool BackupTrendLogMultipleToFile()
             {
                 string currentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
@@ -304,6 +336,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return true;
             }
 
+            // Handle user input
             private void DoUserInput()
             {
                 if (Console.KeyAvailable)
@@ -320,7 +353,7 @@ namespace BACnetServerTrendLogExampleCSharp
                             break;
                         case ConsoleKey.UpArrow:
                             database.AnalogInputManualIncrement.PresentValue += 0.01f;
-                            Console.WriteLine("FYI: Incurment Analog input {0} present value to {1:0.00}", 0, database.AnalogInputManualIncrement.PresentValue);
+                            Console.WriteLine("FYI: Increment Analog input {0} present value to {1:0.00}", 0, database.AnalogInputManualIncrement.PresentValue);
 
                             // Notify the CAS BACnet stack that this value has been updated. 
                             // If there are any subscribers to this value, they will be sent be sent the updated value. 
@@ -347,7 +380,7 @@ namespace BACnetServerTrendLogExampleCSharp
                             Console.WriteLine("Exiting program");
                             System.Environment.Exit(1);
                             break;
-                        case ConsoleKey.H:              
+                        case ConsoleKey.H:
                         default:
                             PrintHelp();
                             break;
@@ -364,11 +397,14 @@ namespace BACnetServerTrendLogExampleCSharp
                 Console.WriteLine("\tS:\t Backup TrendLogMultiple to file");
             }
 
+            // Callback used by the BACnet Stack to get the current time
             public ulong CallbackGetSystemTime()
             {
                 // https://stackoverflow.com/questions/9453101/how-do-i-get-epoch-time-in-c
                 return (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             }
+
+            // Callback used by the BACnet Stack to send a BACnet message
             public UInt16 SendMessage(System.Byte* message, UInt16 messageLength, System.Byte* connectionString, System.Byte connectionStringLength, System.Byte networkType, Boolean broadcast)
             {
                 if (connectionStringLength < 6 || messageLength <= 0)
@@ -398,6 +434,8 @@ namespace BACnetServerTrendLogExampleCSharp
 
                 return 0;
             }
+
+            // Callback used by the BACnet Stack to check if there is a message to process
             public UInt16 RecvMessage(System.Byte* message, UInt16 maxMessageLength, System.Byte* receivedConnectionString, System.Byte maxConnectionStringLength, System.Byte* receivedConnectionStringLength, System.Byte* networkType)
             {
                 try
@@ -431,6 +469,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return 0;
             }
 
+            // Callback used by the BACnet Stack to set Charstring property values to the user
             public bool CallbackGetPropertyCharString(UInt32 deviceInstance, UInt16 objectType, UInt32 objectInstance, UInt32 propertyIdentifier, System.Byte* value, UInt32* valueElementCount, UInt32 maxElementCount, System.Byte encodingType, bool useArrayIndex, UInt32 propertyArrayIndex)
             {
                 Console.WriteLine("FYI: Request for CallbackGetPropertyCharString. objectType={0}, objectInstance={1}, propertyIdentifier={2}, propertyArrayIndex={3}", objectType, objectInstance, propertyIdentifier, propertyArrayIndex);
@@ -455,7 +494,7 @@ namespace BACnetServerTrendLogExampleCSharp
                                 *valueElementCount = CASBACnetStackAdapter.UpdateStringAndReturnSize(value, maxElementCount, database.Device.VendorName);
                                 return true;
                             }
-                            else if(propertyIdentifier == CASBACnetStackAdapter.PROPERTY_IDENTIFIER_DESCRIPTION)
+                            else if (propertyIdentifier == CASBACnetStackAdapter.PROPERTY_IDENTIFIER_DESCRIPTION)
                             {
                                 *valueElementCount = CASBACnetStackAdapter.UpdateStringAndReturnSize(value, maxElementCount, database.Device.Description);
                                 return true;
@@ -477,7 +516,7 @@ namespace BACnetServerTrendLogExampleCSharp
                                 return true;
                             }
                         }
-                        else if(objectInstance == database.AnalogInputManualIncrement.Instance)
+                        else if (objectInstance == database.AnalogInputManualIncrement.Instance)
                         {
                             if (propertyIdentifier == CASBACnetStackAdapter.PROPERTY_IDENTIFIER_OBJECT_NAME)
                             {
@@ -542,6 +581,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return false; // Could not handle this request. 
             }
 
+            // Callback used by the BACnet Stack to get Enumerated property values from the user
             public bool CallbackGetEnumerated(UInt32 deviceInstance, UInt16 objectType, UInt32 objectInstance, UInt32 propertyIdentifier, UInt32* value, bool useArrayIndex, UInt32 propertyArrayIndex)
             {
                 Console.WriteLine("FYI: Request for CallbackGetEnumerated. objectType={0}, objectInstance={1}, propertyIdentifier={2}", objectType, objectInstance, propertyIdentifier);
@@ -567,6 +607,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return false;
             }
 
+            // Callback used by the BACnet Stack to get Real property values from the user
             public bool CallbackGetPropertyReal(UInt32 deviceInstance, UInt16 objectType, UInt32 objectInstance, UInt32 propertyIdentifier, float* value, bool useArrayIndex, UInt32 propertyArrayIndex)
             {
                 Console.WriteLine("FYI: Request for CallbackGetPropertyReal. objectType={0}, objectInstance={1}, propertyIdentifier={2}, propertyArrayIndex={3}", objectType, objectInstance, propertyIdentifier, propertyArrayIndex);
@@ -595,6 +636,7 @@ namespace BACnetServerTrendLogExampleCSharp
                 return false;
             }
 
+            // Callback used by the BACnet Stack to get Unsigned Integer property values from the user
             public bool CallbackGetUnsignedInteger(UInt32 deviceInstance, UInt16 objectType, UInt32 objectInstance, UInt32 propertyIdentifier, UInt32* value, bool useArrayIndex, UInt32 propertyArrayIndex)
             {
                 Console.WriteLine("FYI: Request for CallbackGetUnsignedInteger. objectType={0}, objectInstance={1}, propertyIdentifier={2}, propertyArrayIndex={3}", objectType, objectInstance, propertyIdentifier, propertyArrayIndex);
