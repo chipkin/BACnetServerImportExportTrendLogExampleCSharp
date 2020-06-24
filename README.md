@@ -8,6 +8,10 @@ Build versions of this example can be downloaded from the [Releases](https://git
 ## Installation
 
 Download the latest release zip file on the [Releases](https://github.com/chipkin/BACnetServerTrendLogExampleCSharp) page.
+Copy CASBACnetStack_x64_Release.dll from the stack into the release folder and launch server by using the following command:
+```
+dotnet BACnetServerTrendLogExampleCSharp.dll
+```
 
 ## Usage
 Trendlog object is tied to Analog Input 1 and is updated every 30 seconds. Trendlog Multiple is tied to Analog Input 1, Analog Input 2, Binary Input 3, and Multi-State Input 4.
